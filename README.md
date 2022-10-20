@@ -1,2 +1,2 @@
-# ndfc-api-examples
-examples of using NDFC API to register switches and configure overlay
+# ndfc-rest-example
+Example of how to use NDFC rest api to register switch, add/delete VRF and Network.
