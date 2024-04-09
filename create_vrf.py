@@ -36,12 +36,12 @@ def main():
     # Attach vrf to the provided switches
     result = fabric.attach_vrf(VRF_NAME, SWITCH_LIST)
     if result:
-        print("vrf {VRF_NAME} are attached to switches {SWITCH_LIST}")
+        print(f"vrf {VRF_NAME} are attached to switches {SWITCH_LIST}")
 
     # Deploy
     result = fabric.deploy_vrf(VRF_NAME)
     if result:
-        print("vrf {VRF_NAME} is being deployed...")
+        print(f"vrf {VRF_NAME} is being deployed...")
 
     sleep(2)
 
@@ -52,7 +52,7 @@ def main():
             break
         print("  waiting for deploy")
         sleep(1)
-    print("vrf {VRF_NAME} is deployed successfully!")
+    print(f"vrf {VRF_NAME} is deployed successfully!")
 
 
 if __name__ == "__main__":

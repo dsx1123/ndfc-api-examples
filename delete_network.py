@@ -36,12 +36,12 @@ def main():
             break
         print("  waiting for undeploy")
         sleep(1)
-    print("network {NETWORK} is undeployed successfully!")
+    print(f"network {NETWORK} is undeployed successfully!")
 
     # delete the network itself
     result = fabric.delete_network(NETWORK)
     if result:
-        print("network {NETWORK} is deleted!")
+        print(f"network {NETWORK} is deleted!")
 
 
 if __name__ == "__main__":
