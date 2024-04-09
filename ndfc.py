@@ -1,6 +1,9 @@
 import json
+import urllib3
 import requests
 from requests.exceptions import ConnectionError
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 __author__ = "Shangxin Du(shdu@cisco.com)"
 
