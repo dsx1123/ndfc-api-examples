@@ -5,7 +5,7 @@ from time import sleep
 FABRIC = "fabric_stage"
 NETWORK = "network_rest"
 
-URL = "https://shdu-ndfc-1"
+URL = "https://shdu-ndfc-2"
 USERNAME = "admin"
 PASSWORD = os.getenv("PASSWORD")
 
@@ -22,26 +22,26 @@ def main():
     # detach network from all the switches
     result = fabric.detach_network(NETWORK)
     if result:
-        print("network {} is detached successfully!".format(NETWORK))
+        print(f"network {NETWORK} is detached successfully!")
 
     # deploy the change
     result = fabric.deploy_network(NETWORK)
     if result:
-        print("network {} is being undeployed....".format(NETWORK))
+        print(f"network {NETWORK} is being undeployed....")
 
-    while(True):
+    while (True):
         # check if network is undeployed
         network = fabric.get_network_detail(NETWORK)
         if network[0].status == 'NA':
             break
         print("  waiting for undeploy")
         sleep(1)
-    print("network {} is undeployed successfully!".format(NETWORK))
+    print("network {NETWORK} is undeployed successfully!")
 
     # delete the network itself
     result = fabric.delete_network(NETWORK)
     if result:
-        print("network {} is deleted!".format(NETWORK))
+        print("network {NETWORK} is deleted!")
 
 
 if __name__ == "__main__":

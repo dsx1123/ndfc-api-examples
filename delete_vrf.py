@@ -5,7 +5,7 @@ from time import sleep
 FABRIC = "fabric_stage"
 VRF = "vrf_green"
 
-URL = "https://shdu-ndfc-1"
+URL = "https://shdu-ndfc-2"
 USERNAME = "admin"
 PASSWORD = os.getenv("PASSWORD")
 

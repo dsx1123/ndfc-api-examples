@@ -5,7 +5,7 @@ from time import sleep
 SWITCH_LIST = ["192.168.123.101", "192.168.123.102"]
 
 FABRIC = "fabric_stage"
-URL = "https://shdu-ndfc-1"
+URL = "https://shdu-ndfc-2"
 USERNAME = "admin"
 PASSWORD = os.getenv("PASSWORD")
 VRF_NAME = "vrf_green"
@@ -17,37 +17,42 @@ def main():
     fabric = Fabric(FABRIC, ndfc)
     # check if vrf exists
     vrf = fabric.get_vrf_detail(VRF_NAME)
-    if len(vrf) == 0:
-        # Get next available VNI and vlan id from DCNM
-        vrf_id = fabric.get_next_vrf_id()
-        vlan_id = fabric.get_proposed_vlan(usage='vrf')
+    if len(vrf) != 0:
+        print(f"{VRF_NAME} already exists!")
+        exit(1)
 
-        # Create new vrf
-        vrf = VRF(FABRIC, VRF_NAME, vrf_id, vlan_id=vlan_id)
-        result = fabric.create_vrf(vrf)
-        if result:
-            print("vrf {} is created successfully!".format(VRF_NAME))
+    # Get next available VNI and vlan id from NDFC
+    vrf_id = fabric.get_next_vrf_id()
+    vlan_id = fabric.get_proposed_vlan(usage='vrf')
+
+    # Create new vrf
+    vrf = VRF(FABRIC, VRF_NAME, vrf_id, vlan_id=vlan_id)
+    result = fabric.create_vrf(vrf)
+    if result:
+        print(f"vrf {VRF_NAME} is created successfully!")
 
     sleep(2)
 
-    # Attach vrf to provided switches
+    # Attach vrf to the provided switches
     result = fabric.attach_vrf(VRF_NAME, SWITCH_LIST)
     if result:
-        print("vrf {} are attached to switches {}".format(VRF_NAME, SWITCH_LIST))
+        print("vrf {VRF_NAME} are attached to switches {SWITCH_LIST}")
 
-    # Deploy the network configuration
+    # Deploy
     result = fabric.deploy_vrf(VRF_NAME)
     if result:
-        print("vrf {} is being deployed...".format(VRF_NAME))
+        print("vrf {VRF_NAME} is being deployed...")
+
     sleep(2)
-    while(True):
-        # check if network is undeployed
+
+    while (True):
+        # check if vrf is undeployed
         vrf = fabric.get_vrf_detail(VRF_NAME)
         if vrf[0].status == 'DEPLOYED':
             break
         print("  waiting for deploy")
         sleep(1)
-    print("vrf {} is deployed successfully!".format(VRF_NAME))
+    print("vrf {VRF_NAME} is deployed successfully!")
 
 
 if __name__ == "__main__":

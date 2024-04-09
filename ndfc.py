@@ -393,14 +393,13 @@ class Fabric:
 
         return self._dcnm.rest(url, "post", data)
 
-    def attach_network(self, network, switch_list, interface_list, freeform_config):
+    def attach_network(self, network, switch_list, interface_list, vlan_id, freeform_config=""):
         url = f"/rest/top-down/fabrics/{self.name}/networks/attachments"
         data = [{
             "networkName": network,
             "lanAttachList": []
         }]
         switches = []
-        network_detail = self.get_network_detail(network)
 
         inventory = self.get_inventory()
         for sw in switch_list:
@@ -413,13 +412,44 @@ class Fabric:
                 "serialNumber": sn,
                 "switchPorts": ",".join(interface_list),
                 "detachSwitchPorts": "",
-                "vlan": network_detail[0].vlan_id,
+                "vlan": vlan_id,
                 "dot1QVlan": 1,
                 "untagged": False,
-                "freeformConfig": "",
+                "freeformConfig": freeform_config,
                 "deployment": True
             }
             data[0]['lanAttachList'].append(attach)
+
+        return self._dcnm.rest(url, "post", data)
+
+    def bulk_attach_network(self, networks, switch_list, interface_list, freeform_config):
+        url = f"/rest/top-down/fabrics/{self.name}/networks/attachments"
+        data = []
+        for net in networks:
+            attachment = {
+                "networkName": net["name"],
+                "lanAttachList": []
+            }
+            switches = []
+            inventory = self.get_inventory()
+            for sw in switch_list:
+                switches.append(inventory[sw]["serialNumber"])
+
+            for sn in switches:
+                attach = {
+                    "fabric": self.name,
+                    "networkName": net["name"],
+                    "serialNumber": sn,
+                    "switchPorts": ",".join(interface_list),
+                    "detachSwitchPorts": "",
+                    "vlan": net["vlan_id"],
+                    "dot1QVlan": 1,
+                    "untagged": False,
+                    "freeformConfig": "",
+                    "deployment": True
+                }
+                attachment['lanAttachList'].append(attach)
+            data.append(attachment)
 
         return self._dcnm.rest(url, "post", data)
 
@@ -741,7 +771,6 @@ class NDFC:
                 except json.decoder.JSONDecodeError:
                     return response.text
             else:
-                print(response.text)
                 return None
         if "get" == method.lower():
             response = self.session.get(rest_url,
@@ -754,7 +783,6 @@ class NDFC:
                 except json.decoder.JSONDecodeError:
                     return response.text
             else:
-                print(response.text)
                 return response
         if "delete" == method.lower():
             response = self.session.delete(rest_url,
@@ -1041,4 +1069,3 @@ class NDFC:
         else:
             print(response.text)
             return False
-
