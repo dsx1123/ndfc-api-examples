@@ -66,7 +66,7 @@ def main():
     while (True):
         # check if network is undeployed
         network = fabric.get_network_detail(NETWORK)
-        if network[0].status == 'DEPLOYED':
+        if network[0].status == "DEPLOYED":
             break
         print("  waiting for deploy")
         sleep(3)

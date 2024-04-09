@@ -1,6 +1,7 @@
 import json
 import requests
 from requests.exceptions import ConnectionError
+
 __author__ = "Shangxin Du(shdu@cisco.com)"
 
 
@@ -31,7 +32,9 @@ class Fabric:
 
     def discover_switch(self, switch, preserve_config=True):
         fabric_detail = self.get_fabric_detail()
-        url = "/rest/control/fabrics/{}/inventory/test-reachability".format(fabric_detail["id"])
+        url = "/rest/control/fabrics/{}/inventory/test-reachability".format(
+            fabric_detail["id"]
+        )
         data = {
             "seedIP": switch.address,
             "snmpV3AuthProtocol": "0",
@@ -39,7 +42,7 @@ class Fabric:
             "password": switch.password,
             "maxHops": 0,
             "cdpSecondTimeout": "5",
-            "preserveConfig": preserve_config
+            "preserveConfig": preserve_config,
         }
 
         return self._dcnm.rest(url, "post", data)
@@ -55,7 +58,7 @@ class Fabric:
                     "ipaddr": switch.address,
                     "platform": discovered[0]["platform"],
                     "version": discovered[0]["version"],
-                    "deviceIndex": discovered[0]["deviceIndex"]
+                    "deviceIndex": discovered[0]["deviceIndex"],
                 }
             ],
             "seedIP": switch.address,
@@ -64,7 +67,7 @@ class Fabric:
             "password": switch.password,
             "maxHops": 0,
             "cdpSecondTimeout": "5",
-            "preserveConfig": preserve_config
+            "preserveConfig": preserve_config,
         }
         return self._dcnm.rest(url, "post", data)
 
@@ -81,7 +84,7 @@ class Fabric:
                 "ipAddress": sw.address,
                 "password": sw.password,
                 "data": json.dumps({"modulesModel": [sw.model], "gateway": sw.gateway}),
-                "discoveryAuthProtocol": "0"
+                "discoveryAuthProtocol": "0",
             }
             data.append(poap_data)
 
@@ -93,14 +96,16 @@ class Fabric:
         data = [
             {
                 "serialNumber": self.inventory[switch.address]["serialNumber"],
-                "role":role
+                "role": role,
             }
         ]
         return self._dcnm.rest(url, "post", data)
 
     def rediscover_switch(self, switch):
         self.get_inventory()
-        url = "/rest/control/fabrics/{}/inventory/rediscover/{}".format(self.name, self.inventory[switch.address]["serialNumber"])
+        url = "/rest/control/fabrics/{}/inventory/rediscover/{}".format(
+            self.name, self.inventory[switch.address]["serialNumber"]
+        )
         return self._dcnm.rest(url, "post")
 
     def add_link(self, **kwargs):
@@ -115,8 +120,7 @@ class Fabric:
             "sourceInterface": kwargs.get("src_int"),
             "destinationInterface": kwargs.get("dst_int"),
             "templateName": kwargs.get("template"),
-            "nvPairs": kwargs.get("nvPairs", {})
-
+            "nvPairs": kwargs.get("nvPairs", {}),
         }
         return self._dcnm.rest(url, "post", data)
 
@@ -131,12 +135,14 @@ class Fabric:
                     continue
                 # no filter, return whole list
                 template_config = json.loads(item["vrfTemplateConfig"])
-                vrf = VRF(item["fabric"],
-                          item["vrfName"],
-                          item["vrfId"],
-                          vlan_id=template_config['vrfVlanId'],
-                          vrf_status=item['vrfStatus'],
-                          template_config=template_config)
+                vrf = VRF(
+                    item["fabric"],
+                    item["vrfName"],
+                    item["vrfId"],
+                    vlan_id=template_config["vrfVlanId"],
+                    vrf_status=item["vrfStatus"],
+                    template_config=template_config,
+                )
                 result_list.append(vrf)
 
         return result_list
@@ -147,9 +153,7 @@ class Fabric:
         params = {}
 
         if vrf_name:
-            params = {
-                "vrf-name": vrf_name
-            }
+            params = {"vrf-name": vrf_name}
 
         response = self._dcnm.rest(url, "get", params)
         if response:
@@ -158,15 +162,17 @@ class Fabric:
                     continue
                 # no filter, return whole list
                 template_config = item["networkTemplateConfig"]
-                net = Network(item["fabric"],
-                              item["networkName"],
-                              item["networkId"],
-                              item["vrf"],
-                              vlan_id=template_config['vlanId'],
-                              status=item['networkStatus'],
-                              gateway=template_config['gatewayIpAddress'],
-                              gateway_v6=template_config.get('gatewayIpV6Address'),
-                              template_config=template_config)
+                net = Network(
+                    item["fabric"],
+                    item["networkName"],
+                    item["networkId"],
+                    item["vrf"],
+                    vlan_id=template_config["vlanId"],
+                    status=item["networkStatus"],
+                    gateway=template_config["gatewayIpAddress"],
+                    gateway_v6=template_config.get("gatewayIpV6Address"),
+                    template_config=template_config,
+                )
                 result_list.append(net)
 
         return result_list
@@ -192,7 +198,7 @@ class Fabric:
             "vrfId": vrf.vrf_id,
             "vrfTemplateConfig": json.dumps(vrf.template_config),
             "vrfTemplate": vrf.template,
-            "vrfExtensionTemplate": vrf.ext_template
+            "vrfExtensionTemplate": vrf.ext_template,
         }
         return self._dcnm.rest(url, "post", data)
 
@@ -210,10 +216,7 @@ class Fabric:
             when attached to BL and need extend to external network
         """
         url = f"/rest/top-down/fabrics/{self.name}/vrfs/attachments"
-        data = [{
-            "vrfName": vrf,
-            "lanAttachList": []
-        }]
+        data = [{"vrfName": vrf, "lanAttachList": []}]
         switches = []
         vrf_detail = self.get_vrf_detail(vrf)
 
@@ -230,18 +233,16 @@ class Fabric:
             extensions = {}
             for sw in extend_candidate[0]["switchDetailsList"]:
                 extension_values = {
-                    "VRF_LITE_CONN": {
-                        "VRF_LITE_CONN": []
-                    },
-                    "MULTISITE_CONN": json.dumps({"MULTISITE_CONN": []})
+                    "VRF_LITE_CONN": {"VRF_LITE_CONN": []},
+                    "MULTISITE_CONN": json.dumps({"MULTISITE_CONN": []}),
                 }
                 if sw["serialNumber"] not in switches:
                     continue
                 intfs = sw["extensionPrototypeValues"]
                 for intf in intfs:
-                    res_dot1q = self.get_reserved_dot1q_id(vrf,
-                                                           sw["serialNumber"],
-                                                           intf["interfaceName"])
+                    res_dot1q = self.get_reserved_dot1q_id(
+                        vrf, sw["serialNumber"], intf["interfaceName"]
+                    )
                     conn = json.loads(intf["extensionValues"])
                     # set proposed value and pop unused attr from prototype values
                     conn["DOT1Q_ID"] = res_dot1q
@@ -249,7 +250,13 @@ class Fabric:
                     conn.pop("asn")
                     conn.pop("enableBorderExtension")
                     extension_values["VRF_LITE_CONN"]["VRF_LITE_CONN"].append(conn)
-                extension_values["VRF_LITE_CONN"] = json.dumps({"VRF_LITE_CONN": extension_values["VRF_LITE_CONN"]["VRF_LITE_CONN"]})
+                extension_values["VRF_LITE_CONN"] = json.dumps(
+                    {
+                        "VRF_LITE_CONN": extension_values["VRF_LITE_CONN"][
+                            "VRF_LITE_CONN"
+                        ]
+                    }
+                )
                 extensions[sw["serialNumber"]] = extension_values
 
         for sn in switches:
@@ -260,23 +267,20 @@ class Fabric:
                 "vlan": vrf_detail[0].vlan_id,
                 "freeformConfig": "",
                 # "extensionValues": json.dumps(extensions[sn]),
-                "deployment": True
+                "deployment": True,
             }
             if extend == "VRF_LITE":
                 attach["extensionValues"] = json.dumps(extensions[sn])
-            data[0]['lanAttachList'].append(attach)
+            data[0]["lanAttachList"].append(attach)
         return self._dcnm.rest(url, "post", data)
 
     def detach_vrf(self, vrf):
         url = f"/rest/top-down/fabrics/{self.name}/vrfs/attachments"
-        data = [{
-            "vrfName": vrf,
-            "lanAttachList": []
-        }]
+        data = [{"vrfName": vrf, "lanAttachList": []}]
 
         vrf_detail = self.get_vrf_detail(vrf)
         attach_list = self.get_vrf_attachments(vrf)
-        switches = [sw["switchSerialNo"] for sw in attach_list if sw['isLanAttached']]
+        switches = [sw["switchSerialNo"] for sw in attach_list if sw["isLanAttached"]]
         for sn in switches:
             attach = {
                 "fabric": self.name,
@@ -285,17 +289,15 @@ class Fabric:
                 "vlan": vrf_detail[0].vlan_id,
                 "freeformConfig": "",
                 # "extensionValues": json.dumps(extensions[sn]),
-                "deployment": False
+                "deployment": False,
             }
-            data[0]['lanAttachList'].append(attach)
+            data[0]["lanAttachList"].append(attach)
 
         return self._dcnm.rest(url, "post", data)
 
     def deploy_vrf(self, vrf):
         url = f"/rest/top-down/fabrics/{self.name}/vrfs/deployments"
-        data = {
-            "vrfNames": vrf
-        }
+        data = {"vrfNames": vrf}
         return self._dcnm.rest(url, "post", data)
 
     def get_vrf_extension_prototype(self, vrf, switch_list):
@@ -308,10 +310,7 @@ class Fabric:
             list of SN
         """
         url = "/rest/top-down/fabrics/{}/vrfs/switches".format(self.name)
-        data = {
-            "vrf-names": vrf,
-            "serial-numbers": ','.join(switch_list)
-        }
+        data = {"vrf-names": vrf, "serial-numbers": ",".join(switch_list)}
         return self._dcnm.rest(url, "post", data)
 
     def delete_vrf(self, vrf):
@@ -374,7 +373,7 @@ class Fabric:
             "usageType": "TOP_DOWN_L3_DOT1Q",
             "allocatedTo": vrf,
             "serialNumber": sn,
-            "ifName": intf
+            "ifName": intf,
         }
         return self._dcnm.rest(url, "post", data)
 
@@ -388,17 +387,14 @@ class Fabric:
             "networkId": network.seg_id,
             "networkTemplateConfig": json.dumps(network.template_config),
             "networkTemplate": "Default_Network_Universal",
-            "networkExtensionTemplate": "Default_Network_Extension_Universal"
+            "networkExtensionTemplate": "Default_Network_Extension_Universal",
         }
 
         return self._dcnm.rest(url, "post", data)
 
     def attach_network(self, network, switch_list, interface_list, vlan_id, freeform_config=""):
         url = f"/rest/top-down/fabrics/{self.name}/networks/attachments"
-        data = [{
-            "networkName": network,
-            "lanAttachList": []
-        }]
+        data = [{"networkName": network, "lanAttachList": []}]
         switches = []
 
         inventory = self.get_inventory()
@@ -418,7 +414,7 @@ class Fabric:
                 "freeformConfig": freeform_config,
                 "deployment": True
             }
-            data[0]['lanAttachList'].append(attach)
+            data[0]["lanAttachList"].append(attach)
 
         return self._dcnm.rest(url, "post", data)
 
@@ -455,14 +451,11 @@ class Fabric:
 
     def detach_network(self, network):
         url = f"/rest/top-down/fabrics/{self.name}/networks/attachments"
-        data = [{
-            "networkName": network,
-            "lanAttachList": []
-        }]
+        data = [{"networkName": network, "lanAttachList": []}]
 
         network_detail = self.get_network_detail(network)
         attach_list = self.get_network_attachments(network)
-        switches = [sw["switchSerialNo"] for sw in attach_list if sw['isLanAttached']]
+        switches = [sw["switchSerialNo"] for sw in attach_list if sw["isLanAttached"]]
         for sn in switches:
             attach = {
                 "fabric": self.name,
@@ -474,17 +467,15 @@ class Fabric:
                 "dot1QVlan": 1,
                 "untagged": False,
                 "freeformConfig": "",
-                "deployment": False
+                "deployment": False,
             }
-            data[0]['lanAttachList'].append(attach)
+            data[0]["lanAttachList"].append(attach)
 
         return self._dcnm.rest(url, "post", data)
 
     def deploy_network(self, network):
         url = f"/rest/top-down/fabrics/{self.name}/networks/deployments"
-        data = {
-            "networkNames": network
-        }
+        data = {"networkNames": network}
         return self._dcnm.rest(url, "post", data)
 
     def delete_network(self, network):
@@ -500,7 +491,9 @@ class Fabric:
             url = "/rest/control/fabrics/{}/config-preview/".format(self.name)
         else:
             self.get_inventory()
-            url = "/rest/control/fabrics/{}/config-preview/{}".format(self.name, self.inventory[switch.address]["serialNumber"])
+            url = "/rest/control/fabrics/{}/config-preview/{}".format(
+                self.name, self.inventory[switch.address]["serialNumber"]
+            )
         return self._dcnm.rest(url, "get")
 
     def config_deploy(self, switch=None):
@@ -508,7 +501,9 @@ class Fabric:
             url = "/rest/control/fabrics/{}/config-deploy".format(self.name)
         else:
             self.get_inventory()
-            url = "/rest/control/fabrics/{}/config-deploy/{}".format(self.name, self.inventory[switch.address]["serialnumber"])
+            url = "/rest/control/fabrics/{}/config-deploy/{}".format(
+                self.name, self.inventory[switch.address]["serialnumber"]
+            )
         return self._dcnm.rest(url, "post")
 
 
@@ -580,7 +575,7 @@ class Network:
         else:
             self._template_config = {
                 "vlanId": self._vlan_id,
-                "gatewayIpAddress": kwargs.get("gateway")
+                "gatewayIpAddress": kwargs.get("gateway"),
             }
 
     @property
@@ -621,15 +616,17 @@ class Network:
 
 
 class VRF:
-    def __init__(self,
-                 fabric,
-                 name,
-                 vrf_id,
-                 vlan_id,
-                 vrf_status="NA",
-                 template="Default_VRF_Universal",
-                 ext_template="Default_VRF_Extension_Universal",
-                 **kwargs):
+    def __init__(
+        self,
+        fabric,
+        name,
+        vrf_id,
+        vlan_id,
+        vrf_status="NA",
+        template="Default_VRF_Universal",
+        ext_template="Default_VRF_Extension_Universal",
+        **kwargs,
+    ):
         self._fabric = fabric
         self._name = name
         self._vrf_id = vrf_id
@@ -640,7 +637,7 @@ class VRF:
         self._template_config = {
             "vrfSegmentId": self._vrf_id,
             "vrfName": self._name,
-            "vrfVlanId": self._vlan_id
+            "vrfVlanId": self._vlan_id,
         }
         for k in kwargs.keys():
             self._template_config[k] = kwargs[k]
@@ -723,9 +720,7 @@ class NDFC:
         self.password = password
         self.verify = verify
         self._session = requests.session()
-        self.headers = {
-            "Content-Type": "application/json"
-        }
+        self.headers = {"Content-Type": "application/json"}
 
     @property
     def url(self):
@@ -737,19 +732,16 @@ class NDFC:
 
     def logon(self):
         logon_url = self.url + "/login"
-        headers = {
-            "Content-Type": "application/json"
-        }
+        headers = {"Content-Type": "application/json"}
         data = {
             "userName": self.username,
             "userPasswd": self.password,
-            "domain": "local"
+            "domain": "local",
         }
         try:
-            response = self.session.post(logon_url,
-                                         headers=headers,
-                                         data=json.dumps(data),
-                                         verify=False)
+            response = self.session.post(
+                logon_url, headers=headers, data=json.dumps(data), verify=False
+            )
         except ConnectionError as e:
             print(e)
             return False
@@ -761,10 +753,9 @@ class NDFC:
     def rest(self, url, method, data=None):
         rest_url = self.url + "/appcenter/cisco/ndfc/api/v1/lan-fabric" + url
         if "post" == method.lower():
-            response = self.session.post(rest_url,
-                                         headers=self.headers,
-                                         data=json.dumps(data),
-                                         verify=False)
+            response = self.session.post(
+                rest_url, headers=self.headers, data=json.dumps(data), verify=False
+            )
             if response.ok:
                 try:
                     return response.json()
@@ -773,10 +764,9 @@ class NDFC:
             else:
                 return None
         if "get" == method.lower():
-            response = self.session.get(rest_url,
-                                        params=data,
-                                        headers=self.headers,
-                                        verify=self.verify)
+            response = self.session.get(
+                rest_url, params=data, headers=self.headers, verify=self.verify
+            )
             if response.ok:
                 try:
                     return response.json()
@@ -785,10 +775,9 @@ class NDFC:
             else:
                 return response
         if "delete" == method.lower():
-            response = self.session.delete(rest_url,
-                                           params=data,
-                                           headers=self.headers,
-                                           verify=self.verify)
+            response = self.session.delete(
+                rest_url, params=data, headers=self.headers, verify=self.verify
+            )
             if response.ok:
                 try:
                     return response.json()
@@ -814,7 +803,9 @@ class NDFC:
 
     def discover_switch(self, switch, fabric, preserve_config=True):
         fabric_detail = self.get_fabric_detail(fabric)
-        url = self.url + "/rest/control/fabrics/{}/inventory/test-reachability".format(fabric_detail["id"])
+        url = self.url + "/rest/control/fabrics/{}/inventory/test-reachability".format(
+            fabric_detail["id"]
+        )
         data = {
             "seedIP": switch.address,
             "snmpV3AuthProtocol": "0",
@@ -822,7 +813,7 @@ class NDFC:
             "password": switch.password,
             "maxHops": 0,
             "cdpSecondTimeout": "5",
-            "preserveConfig": preserve_config
+            "preserveConfig": preserve_config,
         }
 
         return self.rest(url, "post", data)
@@ -830,7 +821,9 @@ class NDFC:
     def register_switch(self, switch, fabric, preserve_config=True):
         fabric_detail = self.get_fabric_detail(fabric)
         discovered = self.discover_switch(switch, fabric, preserve_config=False)
-        url = self.url + "/rest/control/fabrics/{}/inventory/discover".format(fabric_detail["id"])
+        url = self.url + "/rest/control/fabrics/{}/inventory/discover".format(
+            fabric_detail["id"]
+        )
         data = {
             "switches": [
                 {
@@ -838,7 +831,7 @@ class NDFC:
                     "ipaddr": switch.address,
                     "platform": discovered[0]["platform"],
                     "version": discovered[0]["version"],
-                    "deviceIndex": discovered[0]["deviceIndex"]
+                    "deviceIndex": discovered[0]["deviceIndex"],
                 }
             ],
             "seedIP": switch.address,
@@ -847,7 +840,7 @@ class NDFC:
             "password": switch.password,
             "maxHops": 0,
             "cdpSecondTimeout": "5",
-            "preserveConfig": preserve_config
+            "preserveConfig": preserve_config,
         }
         return self.rest(url, "post", data)
 
@@ -884,30 +877,29 @@ class NDFC:
             return None
 
     def get_network_detail(self, fabric, network_name=None):
-        network_detail_url = self.url + "/rest/top-down/fabrics/{}/networks".format(fabric)
-        headers = {
-            "Content-Type": "application/json",
-            "dcnm-token": self.token
-        }
+        network_detail_url = self.url + "/rest/top-down/fabrics/{}/networks".format(
+            fabric
+        )
+        headers = {"Content-Type": "application/json", "dcnm-token": self.token}
         result_list = []
 
-        response = requests.get(network_detail_url,
-                                headers=headers,
-                                verify=self.verify)
+        response = requests.get(network_detail_url, headers=headers, verify=self.verify)
         if response.ok:
             for item in response.json():
                 if network_name and network_name != item["networkName"]:
                     continue
                 # no filter, return whole list
                 template_config = json.loads(item["networkTemplateConfig"])
-                network = Network(item["fabric"],
-                                  item["networkName"],
-                                  item["networkId"],
-                                  template_config["vrfName"],
-                                  vlan_id=template_config['vlanId'],
-                                  network_status=item['networkStatus'],
-                                  gateway=template_config["gatewayIpAddress"],
-                                  template_config=template_config)
+                network = Network(
+                    item["fabric"],
+                    item["networkName"],
+                    item["networkId"],
+                    template_config["vrfName"],
+                    vlan_id=template_config["vlanId"],
+                    network_status=item["networkStatus"],
+                    gateway=template_config["gatewayIpAddress"],
+                    template_config=template_config,
+                )
                 result_list.append(network)
 
         return result_list
@@ -916,18 +908,20 @@ class NDFC:
         create_temp_url = self.url + "/fm/fmrest/config/templates/template"
         template_prop = """
 ##template properties \nname={};\ndescription = ;\ntags = {};\nuserDefined = true;\nsupportedPlatforms = {};\ntemplateType = {};\ntemplateSubType = {};\ncontentType = TEMPLATE_CLI;\nimplements = ;\ndependencies = ;\npublished = false;\n##\n
-""".format(template.name,
-           template.tags,
-           template.platforms,
-           template.temp_type,
-           template.temp_sub_type)
-        data = {
-            "content": template_prop + template.content
-        }
-        response = requests.post(create_temp_url,
-                                 headers=self.headers,
-                                 data=json.dumps(data),
-                                 verify=self.verify)
+""".format(
+            template.name,
+            template.tags,
+            template.platforms,
+            template.temp_type,
+            template.temp_sub_type,
+        )
+        data = {"content": template_prop + template.content}
+        response = requests.post(
+            create_temp_url,
+            headers=self.headers,
+            data=json.dumps(data),
+            verify=self.verify,
+        )
         if response.ok:
             return True
         else:
@@ -936,15 +930,14 @@ class NDFC:
 
     def delete_template(self, templates):
         delete_temp_url = self.url + "/fm/fmrest/config/templates/delete/bulk"
-        data = {
-            "name": [],
-            "fabTemplate": templates
-        }
+        data = {"name": [], "fabTemplate": templates}
 
-        response = requests.post(delete_temp_url,
-                                 headers=self.headers,
-                                 data=json.dumps(data),
-                                 verify=self.verify)
+        response = requests.post(
+            delete_temp_url,
+            headers=self.headers,
+            data=json.dumps(data),
+            verify=self.verify,
+        )
         if response.ok:
             return True
         else:
@@ -960,7 +953,7 @@ class NDFC:
             "vrfId": vrf.vrf_id,
             "vrfTemplateConfig": json.dumps(vrf.template_config),
             "vrfTemplate": vrf.template,
-            "vrfExtensionTemplate": vrf.ext_template
+            "vrfExtensionTemplate": vrf.ext_template,
         }
         return self.rest(url, "post", data)
 
@@ -977,19 +970,17 @@ class NDFC:
         extend: None or VRF_LITE
             when attached to BL and need extend to external network
         """
-        attach_url = self.url + "/rest/top-down/fabrics/{}/vrfs/attachments".format(fabric)
-        headers = {
-            "Content-Type": "application/json",
-            "dcnm-token": self.token
-        }
-        data = [{
-            "vrfName": vrf,
-            "lanAttachList": []
-        }]
+        attach_url = self.url + "/rest/top-down/fabrics/{}/vrfs/attachments".format(
+            fabric
+        )
+        headers = {"Content-Type": "application/json", "dcnm-token": self.token}
+        data = [{"vrfName": vrf, "lanAttachList": []}]
         vrf_detail = self.get_vrf_detail(fabric, vrf)
 
         inventory = self.get_inventory(fabric)
-        switchs = [sw["serialNumber"] for sw in inventory if sw["ipAddress"] in switch_list]
+        switchs = [
+            sw["serialNumber"] for sw in inventory if sw["ipAddress"] in switch_list
+        ]
 
         # if VRF_LITE extend is enabled, get interfaces that connect to core router
         # extend the vrf to external with provied peer vrf name
@@ -1000,18 +991,16 @@ class NDFC:
             extensions = {}
             for sw in extend_candidate[0]["switchDetailsList"]:
                 extension_values = {
-                    "VRF_LITE_CONN": {
-                        "VRF_LITE_CONN": []
-                    },
-                    "MULTISITE_CONN": json.dumps({"MULTISITE_CONN": []})
+                    "VRF_LITE_CONN": {"VRF_LITE_CONN": []},
+                    "MULTISITE_CONN": json.dumps({"MULTISITE_CONN": []}),
                 }
                 if sw["serialNumber"] not in switchs:
                     continue
                 intfs = sw["extensionPrototypeValues"]
                 for intf in intfs:
-                    res_dot1q = self.get_reserved_dot1q_id(vrf,
-                                                           sw["serialNumber"],
-                                                           intf["interfaceName"])
+                    res_dot1q = self.get_reserved_dot1q_id(
+                        vrf, sw["serialNumber"], intf["interfaceName"]
+                    )
                     conn = json.loads(intf["extensionValues"])
                     # set proposed value and pop unused attr from prototype values
                     conn["DOT1Q_ID"] = res_dot1q
@@ -1019,7 +1008,13 @@ class NDFC:
                     conn.pop("asn")
                     conn.pop("enableBorderExtension")
                     extension_values["VRF_LITE_CONN"]["VRF_LITE_CONN"].append(conn)
-                extension_values["VRF_LITE_CONN"] = json.dumps({"VRF_LITE_CONN": extension_values["VRF_LITE_CONN"]["VRF_LITE_CONN"]})
+                extension_values["VRF_LITE_CONN"] = json.dumps(
+                    {
+                        "VRF_LITE_CONN": extension_values["VRF_LITE_CONN"][
+                            "VRF_LITE_CONN"
+                        ]
+                    }
+                )
                 extensions[sw["serialNumber"]] = extension_values
 
         for sn in switchs:
@@ -1030,15 +1025,14 @@ class NDFC:
                 "vlan": vrf_detail[0].vlan_id,
                 "freeformConfig": "",
                 # "extensionValues": json.dumps(extensions[sn]),
-                "deployment": True
+                "deployment": True,
             }
             if extend == "VRF_LITE":
                 attach["extensionValues"] = json.dumps(extensions[sn])
-            data[0]['lanAttachList'].append(attach)
-        response = requests.post(attach_url,
-                                 headers=headers,
-                                 data=json.dumps(data),
-                                 verify=self.verify)
+            data[0]["lanAttachList"].append(attach)
+        response = requests.post(
+            attach_url, headers=headers, data=json.dumps(data), verify=self.verify
+        )
         if response.ok:
             return True
         else:
@@ -1049,21 +1043,14 @@ class NDFC:
         save_url = self.url + "/rest/control/fabrics/core-virtual/config-save"
         deploy_url = self.url + "/rest/control/fabrics/core-virtual/config-deploy"
 
-        headers = {
-            "Content-Type": "application/json",
-            "dcnm-token": self.token
-        }
+        headers = {"Content-Type": "application/json", "dcnm-token": self.token}
 
-        response = requests.post(save_url,
-                                 headers=headers,
-                                 verify=self.verify)
+        response = requests.post(save_url, headers=headers, verify=self.verify)
         if not response.ok:
             print(response.text)
             return False
 
-        response = requests.post(deploy_url,
-                                 headers=headers,
-                                 verify=self.verify)
+        response = requests.post(deploy_url, headers=headers, verify=self.verify)
         if response.ok:
             return True
         else:

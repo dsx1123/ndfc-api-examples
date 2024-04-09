@@ -16,26 +16,48 @@ APP_DESCRIPTION = "This example will upgrade group of switch with provided image
 COMPLIANCE_TIMEOUT = 300
 STAGE_TIMEOUT = 1200
 UPGRADE_TIMEOUT = 1800
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 
 
-class URL():
+class URL:
     GET_UPLOADED_IMAGES = "/appcenter/cisco/ndfc/api/v1/imagemanagement/rest/imageupload/uploaded-images-table"
-    SCP_UPLOAD = "/appcenter/cisco/ndfc/api/v1/imagemanagement/rest/imageupload/scp-upload"
-    LOCAL_UPLOAD = "/appcenter/cisco/ndfc/api/v1/imagemanagement/imageupload/smart-image-upload"
-    GET_IMAGE_POLICES = "/appcenter/cisco/ndfc/api/v1/imagemanagement/rest/policymgnt/policies"
-    GET_ATTACHED_POLICY = "/appcenter/cisco/ndfc/api/v1/imagemanagement/rest/policymgnt/attached-policies"
-    CREATE_IMAGE_POLICY = "/appcenter/cisco/ndfc/api/v1/imagemanagement/rest/policymgnt/platform-policy"
-    DELETE_IMAGE_POLICY = "/appcenter/cisco/ndfc/api/v1/imagemanagement/rest/policymgnt/policy"
+    SCP_UPLOAD = (
+        "/appcenter/cisco/ndfc/api/v1/imagemanagement/rest/imageupload/scp-upload"
+    )
+    LOCAL_UPLOAD = (
+        "/appcenter/cisco/ndfc/api/v1/imagemanagement/imageupload/smart-image-upload"
+    )
+    GET_IMAGE_POLICES = (
+        "/appcenter/cisco/ndfc/api/v1/imagemanagement/rest/policymgnt/policies"
+    )
+    GET_ATTACHED_POLICY = (
+        "/appcenter/cisco/ndfc/api/v1/imagemanagement/rest/policymgnt/attached-policies"
+    )
+    CREATE_IMAGE_POLICY = (
+        "/appcenter/cisco/ndfc/api/v1/imagemanagement/rest/policymgnt/platform-policy"
+    )
+    DELETE_IMAGE_POLICY = (
+        "/appcenter/cisco/ndfc/api/v1/imagemanagement/rest/policymgnt/policy"
+    )
     GET_PACKAGES = "/appcenter/cisco/ndfc/api/v1/imagemanagement/rest/policymgnt/nxos"
-    DETACH_IMAGE_POLICY = "/appcenter/cisco/ndfc/api/v1/imagemanagement/rest/policymgnt/detach-policy"
-    ATTACH_IMAGE_POLICY = "/appcenter/cisco/ndfc/api/v1/imagemanagement/rest/policymgnt/attach-policy"
-    GET_ISSU_DEVICES = "/appcenter/cisco/ndfc/api/v1/imagemanagement/rest/packagemgnt/issu"
+    DETACH_IMAGE_POLICY = (
+        "/appcenter/cisco/ndfc/api/v1/imagemanagement/rest/policymgnt/detach-policy"
+    )
+    ATTACH_IMAGE_POLICY = (
+        "/appcenter/cisco/ndfc/api/v1/imagemanagement/rest/policymgnt/attach-policy"
+    )
+    GET_ISSU_DEVICES = (
+        "/appcenter/cisco/ndfc/api/v1/imagemanagement/rest/packagemgnt/issu"
+    )
     STAGE_IMAGE = "/appcenter/cisco/ndfc/api/v1/imagemanagement/rest/stagingmanagement/stage-image"
-    ISSU_UPGRADE = "/appcenter/cisco/ndfc/api/v1/imagemanagement/rest/imageupgrade/upgrade-image"
+    ISSU_UPGRADE = (
+        "/appcenter/cisco/ndfc/api/v1/imagemanagement/rest/imageupgrade/upgrade-image"
+    )
 
 
-class Upgrade():
+class Upgrade:
     def __init__(self, client: Client):
         self._client = client
 
@@ -87,7 +109,7 @@ class Upgrade():
             "filePath": path,
             "userName": username,
             "password": password,
-            "acceptHostkey": True  # always accept the host key
+            "acceptHostkey": True,  # always accept the host key
         }
         r = client.send(URL.SCP_UPLOAD, "post", data)
         if not r.ok:
@@ -96,9 +118,7 @@ class Upgrade():
 
     def local_upload(self, path: str) -> bool:
         with open(path, "rb") as f:
-            data = {
-                "file": f
-            }
+            data = {"file": f}
             r = client.send_file(URL.LOCAL_UPLOAD, data)
             if not r.ok:
                 return False
@@ -111,7 +131,7 @@ class Upgrade():
             "policyName": name,
             "policyType": "PLATFORM",
             "nxosVersion": package,
-            "platform": "N9K"
+            "platform": "N9K",
         }
         r = client.send(URL.CREATE_IMAGE_POLICY, "post", data)
         if r.ok:
@@ -121,9 +141,7 @@ class Upgrade():
             return False
 
     def delete_image_policy(self, name: str) -> bool:
-        data = {
-            "policyNames": [name]
-        }
+        data = {"policyNames": [name]}
         r = client.send(URL.DELETE_IMAGE_POLICY, "delete", data)
         if r.ok:
             return True
@@ -134,16 +152,16 @@ class Upgrade():
     def detach_policy(self, devices: dict) -> bool:
         sn_list = [v["serialNumber"] for v in devices.values()]
         serial_number = ",".join(sn_list)
-        r = client.send(f"{URL.DETACH_IMAGE_POLICY}?serialNumber={serial_number}", "delete")
+        r = client.send(
+            f"{URL.DETACH_IMAGE_POLICY}?serialNumber={serial_number}", "delete"
+        )
         if r.ok:
             return True
         else:
             return False
 
     def attach_policy(self, devices: dict, policy: str) -> bool:
-        data = {
-            "mappingList": []
-        }
+        data = {"mappingList": []}
         for d in devices.values():
             mapping = {
                 "policyName": policy,
@@ -151,7 +169,7 @@ class Upgrade():
                 "serialNumber": d["serialNumber"],
                 "ipAddr": "",
                 "platform": "",
-                "bootstrapMode": ""
+                "bootstrapMode": "",
             }
             data["mappingList"].append(mapping)
 
@@ -168,7 +186,7 @@ class Upgrade():
         finished = False
         start_time = datetime.now()
         timeout = timedelta(seconds=COMPLIANCE_TIMEOUT)
-        while(start_time + timeout > datetime.now()):
+        while start_time + timeout > datetime.now():
             issu_status = self.get_issu_devices(switches)
             status = [s["status"] for s in issu_status.values()]
             if "In-Progress" in status:
@@ -184,7 +202,7 @@ class Upgrade():
         finished = False
         start_time = datetime.now()
         timeout = timedelta(seconds=STAGE_TIMEOUT)
-        while(start_time + timeout > datetime.now()):
+        while start_time + timeout > datetime.now():
             issu_status = self.get_issu_devices(switches)
             stage_status = [s["imageStaged"] for s in issu_status.values()]
             if "In-Progress" in stage_status:
@@ -200,7 +218,7 @@ class Upgrade():
         finished = False
         start_time = datetime.now()
         timeout = timedelta(seconds=UPGRADE_TIMEOUT)
-        while(start_time + timeout > datetime.now()):
+        while start_time + timeout > datetime.now():
             issu_status = self.get_issu_devices(switches)
             upgrade_status = [s["upgrade"] for s in issu_status.values()]
             if "In-Progress" in upgrade_status:
@@ -212,50 +230,38 @@ class Upgrade():
 
     def stage_image(self, devices: dict) -> bool:
         self.wait_for_compliance(devices)
-        data = {
-            "sereialNum": []
-        }
+        data = {"sereialNum": []}
         for v in devices.values():
             data["sereialNum"].append(v["serialNumber"])
         r = client.send(URL.STAGE_IMAGE, "post", data)
         if r.ok:
             return True
         else:
-            logging.error(f"failed to stage images, error code {r.status_code}, {r.data}")
+            logging.error(
+                f"failed to stage images, error code {r.status_code}, {r.data}"
+            )
             return False
 
     def trigger_upgrade(self, policy_name: str, devices: dict) -> None:
         self.wait_for_staging(devices)
         data = {
-            "devices": [
-            ],
+            "devices": [],
             "issuUpgrade": True,
             "issuUpgradeOptions1": {
                 "nonDisruptive": True,
                 "forceNonDisruptive": False,
-                "disruptive": False
+                "disruptive": False,
             },
-            "issuUpgradeOptions2": {
-                "biosForce": False
-            },
+            "issuUpgradeOptions2": {"biosForce": False},
             "epldUpgrade": False,
-            "epldOptions": {
-                "moduleNumber": "ALL",
-                "golden": False
-            },
+            "epldOptions": {"moduleNumber": "ALL", "golden": False},
             "reboot": False,
-            "rebootOptions": {
-                "configReload": False,
-                "writeErase": False
-            },
+            "rebootOptions": {"configReload": False, "writeErase": False},
             "pacakgeInstall": False,
-            "pacakgeUnInstall": False
+            "pacakgeUnInstall": False,
         }
         for v in devices.values():
-            device = {
-                "serialNumber": v["serialNumber"],
-                "policyName": policy_name
-            }
+            device = {"serialNumber": v["serialNumber"], "policyName": policy_name}
             data["devices"].append(device)
         r = client.send(URL.ISSU_UPGRADE, "post", data)
         if r.ok:
@@ -268,33 +274,43 @@ class Upgrade():
 # utils functions
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=APP_DESCRIPTION, epilog=__author__)
-    parser.add_argument("--address", "-a",
-                        dest="address",
-                        required=True,
-                        help="NDFC Url, ex, https://ndfc.example.com")
-    parser.add_argument("--username", "-u",
-                        dest="username",
-                        required=True,
-                        help="NDFC username")
-    parser.add_argument("--password", "-p",
-                        dest="password",
-                        required=True,
-                        help="NDFC password")
-    parser.add_argument("--login_domain", "-d",
-                        dest="login_domain",
-                        default="local",
-                        help="NDFC login domain")
-    parser.add_argument("--switch", "-s",
-                        dest="switches",
-                        required=True,
-                        nargs="*",
-                        help="Switch hostnames are upgraded")
-    parser.add_argument("--image", "-i",
-                        dest="image",
-                        required=True,
-                        help="""local or remote location of image,
+    parser.add_argument(
+        "--address",
+        "-a",
+        dest="address",
+        required=True,
+        help="NDFC Url, ex, https://ndfc.example.com",
+    )
+    parser.add_argument(
+        "--username", "-u", dest="username", required=True, help="NDFC username"
+    )
+    parser.add_argument(
+        "--password", "-p", dest="password", required=True, help="NDFC password"
+    )
+    parser.add_argument(
+        "--login_domain",
+        "-d",
+        dest="login_domain",
+        default="local",
+        help="NDFC login domain",
+    )
+    parser.add_argument(
+        "--switch",
+        "-s",
+        dest="switches",
+        required=True,
+        nargs="*",
+        help="Switch hostnames are upgraded",
+    )
+    parser.add_argument(
+        "--image",
+        "-i",
+        dest="image",
+        required=True,
+        help="""local or remote location of image,
                         for example, /images/nxos64.10.2.1.F.bin, scp://admin@sftp-server/opt/file/nxos64.10.2.1.F.bin,
-                        """)
+                        """,
+    )
     args = parser.parse_args()
     return args
 
@@ -352,7 +368,9 @@ if __name__ == "__main__":
     if not image_exist:
         if remote_server:
             logging.info(f"Uploading image {image} from remote_server {remote_server}")
-            resp = upg_inst.scp_upload(remote_server, remote_username, remote_password, file_path)
+            resp = upg_inst.scp_upload(
+                remote_server, remote_username, remote_password, file_path
+            )
         else:
             logging.info(f"Uploading image {image} from local {file_path}")
             resp = upg_inst.local_upload(file_path)

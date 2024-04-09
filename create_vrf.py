@@ -48,7 +48,7 @@ def main():
     while (True):
         # check if vrf is undeployed
         vrf = fabric.get_vrf_detail(VRF_NAME)
-        if vrf[0].status == 'DEPLOYED':
+        if vrf[0].status == "DEPLOYED":
             break
         print("  waiting for deploy")
         sleep(1)
